@@ -3,7 +3,6 @@
 # This is a simple Reminder Alexa Skill, built using
 # the decorators approach in skill builder.
 import sys
-import boto3
 
 sys.path.append("/opt/")
 
@@ -23,17 +22,18 @@ from ask_sdk_model.services.reminder_management import Trigger, TriggerType, Ale
 from ask_sdk_model.ui import SimpleCard, AskForPermissionsConsentCard
 from ask_sdk_model import Response
 
-logging.basicConfig(level=logging.DEBUG) # ---------------------------delete when production---------------------------
+from DynamoDB.put_item import put_item
+
+logging.basicConfig(level=logging.DEBUG)  # ---------------------------delete when production---------------------------
 
 sb = CustomSkillBuilder(api_client=DefaultApiClient())  # required to use remiders
-dynamodb = boto3.resource('dynamodb')
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 REQUIRED_PERMISSIONS = ["alexa::alerts:reminders:skill:readwrite"]
 TIME_ZONE_ID = 'Asia/Hong_Kong'
-hk_tz = dateutil.tz.gettz(TIME_ZONE_ID)
+HK_TZ = dateutil.tz.gettz(TIME_ZONE_ID)
 
 
 @sb.request_handler(can_handle_func=is_request_type("LaunchRequest"))
@@ -54,43 +54,36 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     request_envelope = handler_input.request_envelope
     permissions = request_envelope.context.system.user.permissions
     reminder_service = handler_input.service_client_factory.get_reminder_management_service()
-    
-    now = datetime.now(tz=hk_tz)
+
+    if not (permissions and permissions.consent_token):
+        logging.info("user hasn't granted reminder permissions")
+        return rb.speak("Please give permissions to set reminders using the alexa app.") \
+            .set_card(AskForPermissionsConsentCard(permissions=REQUIRED_PERMISSIONS)) \
+            .response
+
+    now = datetime.now(tz=HK_TZ)
     userId = get_user_id(handler_input)
     deviceId = get_device_id(handler_input)
-    
+
     if userId == None:
         logging.info("can't get the userId")
     elif deviceId == None:
         logging.info("can't get the deviceId")
 
     try:
-        reminder_date = get_slot_value(handler_input, "date") 
+        reminder_date = get_slot_value(handler_input, "date")
         reminder_time = get_slot_value(handler_input, "time")
         reminder_repeat = get_slot_value(handler_input, "repeat")
+        reminder_method = get_slot_value(handler_input, "method")
+        if reminder_method == 'alexa reminder':
+            reminder_method = 0
+        else:
+            reminder_method = 1
     except:
         logging.info("can't get the slot value")
-    
-    # try:
-    table = dynamodb.Table('Medicine-Notifier-reminder-record')
-    table.put_item(
-        Item={
-            'userId': userId,
-            'create_time': now.strftime("%Y-%m-%d %H:%M:%S"),
-            'deviceId': deviceId,
-            'date': reminder_date,
-            'time': reminder_time,
-            'repeat': reminder_repeat
-        }
-    )
-    # except:
-    #     logging.info("can't put record to Dynamodb")
-    
-    if not (permissions and permissions.consent_token):
-        logging.info("user hasn't granted reminder permissions")
-        return rb.speak("Please give permissions to set reminders using the alexa app.") \
-            .set_card(AskForPermissionsConsentCard(permissions=REQUIRED_PERMISSIONS)) \
-            .response
+
+    put_item(userId, now.strftime("%Y-%m-%d %H:%M:%S"), deviceId, reminder_date, reminder_time, reminder_repeat,
+             reminder_method)
 
     five_mins_from_now = now + timedelta(seconds=+5)
     notification_time = five_mins_from_now.strftime("%Y-%m-%dT%H:%M:%S")
@@ -163,7 +156,7 @@ def all_exception_handler(handler_input: HandlerInput, exception: Exception) -> 
 
 handler = sb.lambda_handler()
 
-# mark error to database, mark reminder record, kind of medicine, function to process data(repeat), time up to time zone
+# mark error to database, mark reminder record, kind of medicine, function to process data(repeat), time up to time zone, time and info to Class
 # handle userId(can't get), DynamoDB(can't put_item -> try again).
 
-#tmr do splite code add method(connect or reminder), for hong kong time, combine date time, change to 0-7
+# tmr do for hong kong time, combine date time, change to 0-7
