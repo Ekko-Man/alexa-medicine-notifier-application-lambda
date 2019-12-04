@@ -23,6 +23,7 @@ from ask_sdk_model.ui import SimpleCard, AskForPermissionsConsentCard
 from ask_sdk_model import Response
 
 from DynamoDB.put_item import put_item
+from change_slot_value import change_slot_value
 
 logging.basicConfig(level=logging.DEBUG)  # ---------------------------delete when production---------------------------
 
@@ -75,13 +76,10 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
         reminder_time = get_slot_value(handler_input, "time")
         reminder_repeat = get_slot_value(handler_input, "repeat")
         reminder_method = get_slot_value(handler_input, "method")
-        if reminder_method == 'alexa reminder':
-            reminder_method = 0
-        else:
-            reminder_method = 1
     except:
         logging.info("can't get the slot value")
 
+    reminder_repeat, reminder_method = change_slot_value(reminder_repeat, reminder_method)
     put_item(userId, now.strftime("%Y-%m-%d %H:%M:%S"), deviceId, reminder_date, reminder_time, reminder_repeat,
              reminder_method)
 
