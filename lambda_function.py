@@ -8,7 +8,7 @@ sys.path.append("/opt/")
 
 import logging
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import dateutil.tz
 
 from ask_sdk_core.api_client import DefaultApiClient
@@ -79,12 +79,15 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     except:
         logging.info("can't get the slot value")
 
-    reminder_repeat, reminder_method = change_slot_value(reminder_repeat, reminder_method)
-    put_item(userId, now.strftime("%Y-%m-%d %H:%M:%S"), deviceId, reminder_date, reminder_time, reminder_repeat,
-             reminder_method)
+    reminder_datetime = reminder_date + ' ' + reminder_time
+    reminder_datetime = datetime.strptime(reminder_datetime, '%Y-%m-%d %H:%M')
+    reminder_datetime.replace(tzinfo=timezone.utc).astimezone(HK_TZ)
 
-    five_mins_from_now = now + timedelta(seconds=+5)
-    notification_time = five_mins_from_now.strftime("%Y-%m-%dT%H:%M:%S")
+    reminder_repeat, reminder_method = change_slot_value(reminder_repeat, reminder_method)
+    put_item(userId, now.strftime("%Y-%m-%d %H:%M:%S"), deviceId, reminder_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+             reminder_repeat, reminder_method)
+
+    notification_time = reminder_datetime.strftime("%Y-%m-%dT%H:%M:%S")
 
     trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, time_zone_id=TIME_ZONE_ID)
     text = SpokenText(locale='en-US',
@@ -154,7 +157,5 @@ def all_exception_handler(handler_input: HandlerInput, exception: Exception) -> 
 
 handler = sb.lambda_handler()
 
-# mark error to database, mark reminder record, kind of medicine, function to process data(repeat), time up to time zone, time and info to Class
+# mark error to database, kind of medicine
 # handle userId(can't get), DynamoDB(can't put_item -> try again).
-
-# tmr do for hong kong time, combine date time, change to 0-7
