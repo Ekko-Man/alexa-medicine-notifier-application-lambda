@@ -17,7 +17,7 @@ from ask_sdk_core.utils import is_request_type, is_intent_name, get_slot_value, 
 from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk_model.services import ServiceException
 from ask_sdk_model.services.reminder_management import Trigger, TriggerType, AlertInfo, SpokenInfo, SpokenText, \
-    PushNotification, PushNotificationStatus, ReminderRequest
+    PushNotification, PushNotificationStatus, ReminderRequest, RecurrenceFreq, RecurrenceDay, Recurrence
 
 from ask_sdk_model.ui import SimpleCard, AskForPermissionsConsentCard
 from ask_sdk_model import Response
@@ -40,7 +40,8 @@ HK_TZ = dateutil.tz.gettz(TIME_ZONE_ID)
 @sb.request_handler(can_handle_func=is_request_type("LaunchRequest"))
 def launch_request_handler(handler_input: HandlerInput) -> Response:
     """Handler for Skill Launch."""
-    speech_text = "Welcome to the Medicine Notifier Application, you can say notify me eat medicine at while time and date."
+    # speech_text = "Welcome to the Medicine Notifier Application, you can say notify me eat medicine at while time and date."
+    speech_text = "Welcome."
 
     return handler_input.response_builder.speak(speech_text).set_card(
         SimpleCard("Welcome", speech_text)).set_should_end_session(
@@ -62,7 +63,6 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
             .set_card(AskForPermissionsConsentCard(permissions=REQUIRED_PERMISSIONS)) \
             .response
 
-    now = datetime.now(tz=HK_TZ)
     userId = get_user_id(handler_input)
     deviceId = get_device_id(handler_input)
 
@@ -74,25 +74,53 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     try:
         reminder_date = get_slot_value(handler_input, "date")
         reminder_time = get_slot_value(handler_input, "time")
-        reminder_repeat = get_slot_value(handler_input, "repeat")
-        reminder_method = get_slot_value(handler_input, "method")
+        reminder_repeat_day = get_slot_value(handler_input, "repeat_day")
+        reminder_repeat_time = get_slot_value(handler_input, "repeat_time")
+        reminder_method = get_slot_value(handler_input, "notify_method")
+        print(reminder_date, reminder_time, reminder_repeat_day, reminder_repeat_time, reminder_method)
+        print(type(reminder_date))
+        print(type(reminder_time))
+        print(type(reminder_repeat_day))
+        print(type(reminder_repeat_time))
+        print(type(reminder_method))
+        print(reminder_method + '----------------------------------------------')
     except:
         logging.info("can't get the slot value")
 
+    print('change datetime----------------------------------------------')
     reminder_datetime = reminder_date + ' ' + reminder_time
     reminder_datetime = datetime.strptime(reminder_datetime, '%Y-%m-%d %H:%M')
     reminder_datetime.replace(tzinfo=timezone.utc).astimezone(HK_TZ)
 
-    reminder_repeat, reminder_method = change_slot_value(reminder_repeat, reminder_method)
-    put_item(userId, now.strftime("%Y-%m-%d %H:%M:%S"), deviceId, reminder_datetime.strftime("%Y-%m-%d %H:%M:%S"),
-             reminder_repeat, reminder_method)
+    print('change slot value----------------------------------------------')
+    frequency_everyday, frequency_time_perday, reminder_method = change_slot_value(reminder_repeat_day,
+                                                                                   reminder_repeat_time,
+                                                                                   reminder_method)
+    create_time = datetime.now(tz=HK_TZ)
+    create_time = str(datetime.timestamp(create_time)).split(".")[0]
+    reminder_datetime_ts = str(datetime.timestamp(reminder_datetime)).split(".")[0]
 
+    put_item(userId, create_time, deviceId, reminder_datetime_ts, frequency_everyday,
+             frequency_time_perday, reminder_method)
+
+    if reminder_method == 1:
+        speech_text = "We will remind you with the phone. Goodbye"
+        return handler_input.response_builder.speak(speech_text).set_card(
+            SimpleCard("Welcome", speech_text)).set_should_end_session(
+            False).response
+
+    # -----reminder
     notification_time = reminder_datetime.strftime("%Y-%m-%dT%H:%M:%S")
 
+    # if reminder_date == 1:
+    #     byDay = [RecurrenceDay.SU, RecurrenceDay.MO, RecurrenceDay.TU, RecurrenceDay.WE, RecurrenceDay.TH, RecurrenceDay.FR, RecurrenceDay.SA]
+    #     print(byDay + '-------------------')
+    #     recurrence = Recurrence(by_day=byDay, freq=RecurrenceFreq.DAILY)
+    #     trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, recurrence=recurrence,
+    #                       time_zone_id=TIME_ZONE_ID)
+    # else:
     trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, time_zone_id=TIME_ZONE_ID)
-    text = SpokenText(locale='en-US',
-                      ssml='<speak>You need to eat medicine now.</speak>',
-                      text='You need to eat medicine now.')
+    text = SpokenText(locale='en-US', ssml='<speak>Please take medicine now</speak>', text='Please take medicine now')
     alert_info = AlertInfo(SpokenInfo([text]))
     push_notification = PushNotification(PushNotificationStatus.ENABLED)
     reminder_request = ReminderRequest(notification_time, trigger, alert_info, push_notification)
@@ -157,5 +185,5 @@ def all_exception_handler(handler_input: HandlerInput, exception: Exception) -> 
 
 handler = sb.lambda_handler()
 
-# mark error to database, kind of medicine
+# mark error to database, kind of medicine, repeat_day, repeat_time
 # handle userId(can't get), DynamoDB(can't put_item -> try again).

@@ -4,7 +4,8 @@ import logging
 dynamodb = boto3.resource('dynamodb')
 
 
-def put_item(userId: str, create_time: str, deviceId: str, datetime: str, repaet: str, method: int):
+def put_item(userId: str, create_time: str, deviceId: str, datetime: str, frequency_everyday: str, \
+    frequency_time_perday: int, method: int):
     try:
         table = dynamodb.Table('Medicine-Notifier-reminder-record')
         table.put_item(
@@ -13,7 +14,8 @@ def put_item(userId: str, create_time: str, deviceId: str, datetime: str, repaet
                 'create_time': create_time,
                 'deviceId': deviceId,
                 'datetime': datetime,
-                'repeat': repaet,
+                'frequency_everyday': frequency_everyday,
+                'frequency_time_perday': frequency_time_perday,
                 'method': method
             }
         )
