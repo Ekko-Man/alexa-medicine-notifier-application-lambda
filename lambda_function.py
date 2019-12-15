@@ -96,6 +96,12 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     frequency_everyday, frequency_time_perday, reminder_method = change_slot_value(reminder_repeat_day,
                                                                                    reminder_repeat_time,
                                                                                    reminder_method)
+    if (frequency_everyday == 999) or (frequency_time_perday == 999) or (reminder_method == 999):
+        speech_text = "Your answer has no relation to the question. Please try again."
+        return handler_input.response_builder.speak(speech_text).set_card(
+            SimpleCard("Welcome", speech_text)).set_should_end_session(
+            False).response
+
     create_time = datetime.now(tz=HK_TZ)
     create_time = str(datetime.timestamp(create_time)).split(".")[0]
     reminder_datetime_ts = str(datetime.timestamp(reminder_datetime)).split(".")[0]
@@ -112,18 +118,22 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     # -----reminder
     notification_time = reminder_datetime.strftime("%Y-%m-%dT%H:%M:%S")
 
-    # if reminder_date == 1:
-    #     byDay = [RecurrenceDay.SU, RecurrenceDay.MO, RecurrenceDay.TU, RecurrenceDay.WE, RecurrenceDay.TH, RecurrenceDay.FR, RecurrenceDay.SA]
-    #     print(byDay + '-------------------')
-    #     recurrence = Recurrence(by_day=byDay, freq=RecurrenceFreq.DAILY)
-    #     trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, recurrence=recurrence,
-    #                       time_zone_id=TIME_ZONE_ID)
-    # else:
-    trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, time_zone_id=TIME_ZONE_ID)
+    if frequency_everyday == 1:
+        # byDay = [RecurrenceDay.SU, RecurrenceDay.MO, RecurrenceDay.TU, RecurrenceDay.WE, RecurrenceDay.TH, RecurrenceDay.FR, RecurrenceDay.SA]
+        # recurrence = Recurrence(by_day=byDay, freq=RecurrenceFreq.DAILY)
+        recurrence = Recurrence(freq=RecurrenceFreq.DAILY)
+        trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, recurrence=recurrence,
+                          time_zone_id=TIME_ZONE_ID)
+    else:
+        trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, time_zone_id=TIME_ZONE_ID)
+
+    print('seted trigger----------------------------------------------')
+
     text = SpokenText(locale='en-US', ssml='<speak>Please take medicine now</speak>', text='Please take medicine now')
     alert_info = AlertInfo(SpokenInfo([text]))
     push_notification = PushNotification(PushNotificationStatus.ENABLED)
     reminder_request = ReminderRequest(notification_time, trigger, alert_info, push_notification)
+    print('before create reminder----------------------------------------------')
 
     try:
         reminder_responce = reminder_service.create_reminder(reminder_request)
@@ -144,7 +154,8 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     is_intent_name("AMAZON.StopIntent")(handler_input))
 def cancel_and_stop_intent_handler(handler_input: HandlerInput) -> Response:
     """Single handler for Cancel and Stop Intent."""
-    speech_text = "Goodbye!"
+    # speech_text = "Goodbye!"
+    speech_text = "Fuck, you,  too!"
 
     return handler_input.response_builder.speak(speech_text).set_card(
         SimpleCard("Remindify", speech_text)).response
