@@ -134,7 +134,28 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     print('before create reminder----------------------------------------------')
 
     try:
-        reminder_responce = reminder_service.create_reminder(reminder_request)
+        if frequency_time_perday == 2:
+            # first
+            notification_time = reminder_datetime.replace(minute=0, hour=8, second=0).strftime("%Y-%m-%dT%H:%M:%S")
+            trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, time_zone_id=TIME_ZONE_ID)
+            alert_info = AlertInfo(SpokenInfo([text]))
+            push_notification = PushNotification(PushNotificationStatus.ENABLED)
+            reminder_request = ReminderRequest(notification_time, trigger, alert_info, push_notification)
+            print('First reminder request')
+            print(reminder_request)
+            reminder_responce = reminder_service.create_reminder(reminder_request)
+            # second
+            notification_time = reminder_datetime.replace(minute=0, hour=19, second=0).strftime("%Y-%m-%dT%H:%M:%S")
+            trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, time_zone_id=TIME_ZONE_ID)
+            alert_info = AlertInfo(SpokenInfo([text]))
+            push_notification = PushNotification(PushNotificationStatus.ENABLED)
+            reminder_request = ReminderRequest(notification_time, trigger, alert_info, push_notification)
+            print('First reminder request')
+            print(reminder_request)
+            reminder_responce = reminder_service.create_reminder(reminder_request)
+        else:
+            print('fuck my life -----------------')
+            reminder_responce = reminder_service.create_reminder(reminder_request)
     except ServiceException as e:
         # see: https://developer.amazon.com/docs/smapi/alexa-reminders-api-reference.html#error-messages
         logger.error(e)
@@ -152,8 +173,7 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     is_intent_name("AMAZON.StopIntent")(handler_input))
 def cancel_and_stop_intent_handler(handler_input: HandlerInput) -> Response:
     """Single handler for Cancel and Stop Intent."""
-    # speech_text = "Goodbye!"
-    speech_text = "Fuck, you,  too!"
+    speech_text = "Goodbye!"
 
     return handler_input.response_builder.speak(speech_text).set_card(
         SimpleCard("Remindify", speech_text)).response
@@ -195,3 +215,4 @@ def all_exception_handler(handler_input: HandlerInput, exception: Exception) -> 
 handler = sb.lambda_handler()
 
 # mark error handler, kind of medicine
+# make reminder function

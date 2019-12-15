@@ -1,14 +1,15 @@
 import logging
 
 frequency_everyday_dic = {'no': 0,
-                           'every day': 1}
+                          'every day': 1}
 
 frequency_time_perday_dic = {'no': 0,
-                            'once a day': 1,
-                            'twice a day': 2,
-                            'thrice a day': 3}
+                             'once a day': 1,
+                             'twice a day': 2,
+                             'thrice a day': 3}
 
 reminder_method_dic = {'alexa reminder': 0,
+                       'remind': 0,
                        'reminder': 0,
                        'phone call': 1}
 
