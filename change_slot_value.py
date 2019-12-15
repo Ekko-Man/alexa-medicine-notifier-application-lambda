@@ -1,9 +1,9 @@
 import logging
 
-reminder_repeat_day_dic = {'no': 0,
+frequency_everyday_dic = {'no': 0,
                            'every day': 1}
 
-reminder_repeat_time_dic = {'no': 0,
+frequency_time_perday_dic = {'no': 0,
                             'once a day': 1,
                             'twice a day': 2,
                             'thrice a day': 3}
@@ -19,17 +19,12 @@ def key_word_in_slot(string, dic):
             return (dic[string])
 
 
-def change_slot_value(repeat_day, repeat_time, method):
+def change_slot_value(frequency_everyday, frequency_time_perday, reminder_method):
     print('hi hi')
     try:
-        reminder_repeat_day = key_word_in_slot(repeat_day, reminder_repeat_day_dic)
-        reminder_repeat_time = key_word_in_slot(repeat_time, reminder_repeat_time_dic)
-        reminder_method = key_word_in_slot(method, reminder_method_dic)
-
-        # reminder_repeat_day = reminder_repeat_day_dic[reminder_repeat_day]
-        # reminder_repeat_time = reminder_repeat_time_dic[reminder_reminder_repeat_timerepeat]
-        # reminder_method = reminder_method_dic[reminder_method]
-
+        reminder_repeat_day = key_word_in_slot(frequency_everyday, frequency_everyday_dic)
+        reminder_repeat_time = key_word_in_slot(frequency_time_perday, frequency_time_perday_dic)
+        reminder_method = key_word_in_slot(reminder_method, reminder_method_dic)
         print('return----------------------------------------------')
         return reminder_repeat_day, reminder_repeat_time, reminder_method
     except:

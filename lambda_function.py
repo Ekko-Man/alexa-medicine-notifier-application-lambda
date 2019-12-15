@@ -74,14 +74,14 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     try:
         reminder_date = get_slot_value(handler_input, "date")
         reminder_time = get_slot_value(handler_input, "time")
-        reminder_repeat_day = get_slot_value(handler_input, "repeat_day")
-        reminder_repeat_time = get_slot_value(handler_input, "repeat_time")
+        frequency_everyday = get_slot_value(handler_input, "repeat_day")
+        frequency_time_perday = get_slot_value(handler_input, "repeat_time")
         reminder_method = get_slot_value(handler_input, "notify_method")
-        print(reminder_date, reminder_time, reminder_repeat_day, reminder_repeat_time, reminder_method)
+        print(reminder_date, reminder_time, frequency_everyday, frequency_time_perday, reminder_method)
         print(type(reminder_date))
         print(type(reminder_time))
-        print(type(reminder_repeat_day))
-        print(type(reminder_repeat_time))
+        print(type(frequency_everyday))
+        print(type(frequency_time_perday))
         print(type(reminder_method))
         print(reminder_method + '----------------------------------------------')
     except:
@@ -93,8 +93,8 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     reminder_datetime.replace(tzinfo=timezone.utc).astimezone(HK_TZ)
 
     print('change slot value----------------------------------------------')
-    frequency_everyday, frequency_time_perday, reminder_method = change_slot_value(reminder_repeat_day,
-                                                                                   reminder_repeat_time,
+    frequency_everyday, frequency_time_perday, reminder_method = change_slot_value(frequency_everyday,
+                                                                                   frequency_time_perday,
                                                                                    reminder_method)
     if (frequency_everyday == 999) or (frequency_time_perday == 999) or (reminder_method == 999):
         speech_text = "Your answer has no relation to the question. Please try again."
@@ -119,8 +119,6 @@ def Medicine_Notifier_Intent_handler(handler_input: HandlerInput) -> Response:
     notification_time = reminder_datetime.strftime("%Y-%m-%dT%H:%M:%S")
 
     if frequency_everyday == 1:
-        # byDay = [RecurrenceDay.SU, RecurrenceDay.MO, RecurrenceDay.TU, RecurrenceDay.WE, RecurrenceDay.TH, RecurrenceDay.FR, RecurrenceDay.SA]
-        # recurrence = Recurrence(by_day=byDay, freq=RecurrenceFreq.DAILY)
         recurrence = Recurrence(freq=RecurrenceFreq.DAILY)
         trigger = Trigger(TriggerType.SCHEDULED_ABSOLUTE, notification_time, recurrence=recurrence,
                           time_zone_id=TIME_ZONE_ID)
@@ -196,5 +194,4 @@ def all_exception_handler(handler_input: HandlerInput, exception: Exception) -> 
 
 handler = sb.lambda_handler()
 
-# mark error to database, kind of medicine, repeat_day, repeat_time
-# handle userId(can't get), DynamoDB(can't put_item -> try again).
+# mark error handler, kind of medicine
